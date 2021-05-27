@@ -11,12 +11,32 @@ def correct_answer():  # 게임에서 쓰일 맞는 답
     return number
 
 
-def make_answer():  # 게임에서 서버에게 보낼 답 만들기
+def make_answer(strike, ball, last_data_list):  # 게임에서 서버에게 보낼 답 만들기
     number = []
-    while len(number) < 4:
-        num = random.randint(0, 9)
-        if num not in number:  # 새로운 수가 중복이 아니면 추가
-            number.append(num)
+    global remove_list
+    global candidate
+    strike = int(strike)
+    ball = int(ball)
+    if strike == 0 and ball == 0:
+        remove_list = last_data_list
+    elif ball == 4 or strike+ball == 4:
+        candidate = last_data_list
+        random.shuffle(candidate)
+        return candidate
+
+    if len(last_data_list) == 0:
+        while len(number) < 4:
+            num = random.randint(0,9)
+            if num not in number:
+                number.append(num)
+
+    else:
+        while len(number) < 4:
+            num = random.randint(0,9)
+            if num not in remove_list:
+                if num not in number:
+                    number.append(num)
+
     return number
 
 
@@ -46,10 +66,16 @@ def check(recieve_data, right_answer):
 MA = "MAgame_request"
 MB = "MBgame_grant"
 
+remove_list = list()
+candidate = list()
+last_data_list = []
 strike = 0
 ball = 0
+rcv_strike = 0
+rcv_ball = 0
 host = '127.0.0.1'
 port = 12000
+
 
 serverSocket = socket(AF_INET, SOCK_STREAM)  # 서버 소켓 객체 생성
 serverSocket.bind((host, port))  # 생성한 서버 소켓을 서버 IP 및 포트 튜플 형태로 맵핑
@@ -78,6 +104,8 @@ elif data == "MAgame_request":
     while True:  # 게임 시작
 
         rcv_data = connectionSocket.recv(1024).decode('utf-8')  # 디코드해서숫자 받기
+        rcv_strike = rcv_data[16]
+        rcv_ball = rcv_data[19]
         print("From Client:", rcv_data[2:])
         strike, ball = check(rcv_data[2:], answer)
 
@@ -97,7 +125,8 @@ elif data == "MAgame_request":
             print("Server Lose!")
             break
 
-        num = make_answer()
+        num = make_answer(rcv_strike,rcv_ball,last_data_list)
+        last_data_list = num
         data_make = make_dataset(num, strike, ball)
         print("To Client:", data_make[2:])
         connectionSocket.send(data_make.encode('utf-8'))    # 인코드해서 보낸다
