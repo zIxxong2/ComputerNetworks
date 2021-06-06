@@ -15,18 +15,22 @@ def make_answer(strike, ball, last_data_list):  # 게임에서 서버에게 보�
     number = []
     global remove_list
     global candidate
+    global board
     strike = int(strike)
     ball = int(ball)
     if strike == 0 and ball == 0:
         remove_list = last_data_list
     elif ball == 4 or strike+ball == 4:
-        candidate = last_data_list
+        board.append(last_data_list)
+        candidate = last_data_list.copy()
         random.shuffle(candidate)
+        while candidate in board:
+            random.shuffle(candidate)
         return candidate
 
     if len(last_data_list) == 0:
         while len(number) < 4:
-            num = random.randint(0,9)
+            num = random.randint(0, 9)
             if num not in number:
                 number.append(num)
 
@@ -53,6 +57,14 @@ def check(recieve_data, right_answer):
     for i in range(1, 11, 3):
         rcv_list.append(recieve_data[i])
     rcv_list = list(map(int, rcv_list))
+
+    if len(rcv_list) != len(set(rcv_list)):     # 받은 리스트에 중복값이 있나 체크
+
+        if sum(rcv_list) != 0:          # 서버가 이길시 클라이언트에서 0,0,0,0 리스트가 오는 경우 제외
+            print("Wrong guess (same digits)!")
+            connectionSocket.close()
+            serverSocket.close()
+
     for i in range(0, 4):
         for j in range(0, 4):
             if (rcv_list[i] == right_answer[j] and i == j):
@@ -68,6 +80,7 @@ MB = "MBgame_grant"
 
 remove_list = list()
 candidate = list()
+board = list()
 last_data_list = []
 strike = 0
 ball = 0
@@ -108,6 +121,7 @@ elif data == "MAgame_request":
         rcv_ball = rcv_data[19]
         print("From Client:", rcv_data[2:])
         strike, ball = check(rcv_data[2:], answer)
+
 
         if strike == 4:
             flag += 1

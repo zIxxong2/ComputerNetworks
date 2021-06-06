@@ -17,15 +17,29 @@ def make_answer(strike, ball, last_data_list):  # 게임에서 서버에게 보�
     number = []
     global remove_list
     global candidate
+    global board
     strike = int(strike)
     ball = int(ball)
+
     if strike == 0 and ball == 0:   # 서버에게 받은 결과에 따라 절대 쓰이지 않을 번호 저장
         remove_list = last_data_list
 
-    elif ball == 4 or strike+ball == 4:
+    elif ball == 4 or ball+strike == 4:
+        board.append(last_data_list)
+        candidate = last_data_list.copy()
+        random.shuffle(candidate)
+        while candidate in board:
+            random.shuffle(candidate)
+        return candidate
+
+    """    elif ball == 4 or strike+ball == 4:
+        
         candidate = last_data_list
         random.shuffle(candidate)
+        
         return candidate
+    """
+
 
 
     if len(last_data_list) == 0:    # 처음 시작할 때 그냥 랜덤한 숫자 넣기
@@ -65,6 +79,11 @@ def check(recieve_data, right_answer):
         rcv_list.append(recieve_data[i])
 
     rcv_list = list(map(int, rcv_list))
+
+    if len(rcv_list) != len(set(rcv_list)):     # 받은 리스트에 중복값이 있나 체크
+        print("Wrong guess (same digits)!")
+        clientSocket.close()
+
     for i in range(0, 4):
         for j in range(0, 4):
             if (rcv_list[i] == right_answer[j] and i == j):
@@ -90,6 +109,9 @@ remove_list = list()
 candidate = list()
 win = [0, 0, 0, 0]
 last_data_list =[]
+
+#board = [[0] * 4 for _ in range(24)]
+board = list()
 
 clientSocket = socket(AF_INET, SOCK_STREAM)  # 클라이언트 소켓 생성
 clientSocket.connect((ip, port))
